@@ -1,4 +1,4 @@
-import { HueClient } from "./client";
+import { HueClient, DEVICE_TYPE } from "./client";
 import nock from "nock";
 
 beforeEach(() => {
@@ -17,7 +17,7 @@ describe("the hue client", () => {
 
       const bridge = nock("http://123.123.123.123");
 
-      bridge.post("/api", '{"deviceType":"hue-build-status"}').reply(200, [
+      bridge.post("/api", `{"deviceType":"${DEVICE_TYPE}"}`).reply(200, [
         {
           success: {
             username: testUsername
@@ -32,6 +32,34 @@ describe("the hue client", () => {
       const client = new HueClient("123.123.123.123");
 
       const actual = await client.get("/foo-bar");
+
+      expect(actual).toEqual(expectedResult);
+    });
+  });
+
+  describe("post", () => {
+    it("if no password is passed in, it gets one from the bridge and uses it in the request, then returns the response", async () => {
+      const testUsername = "foo-username";
+
+      const bridge = nock("http://123.123.123.123");
+
+      bridge.post("/api", `{"deviceType":"${DEVICE_TYPE}"}`).reply(200, [
+        {
+          success: {
+            username: testUsername
+          }
+        }
+      ]);
+
+      const expectedResult = { foo: "bar" };
+
+      bridge
+        .post(`/api/${testUsername}/foo-bar`, { foo: "bar" })
+        .reply(200, expectedResult);
+
+      const client = new HueClient("123.123.123.123");
+
+      const actual = await client.post("/foo-bar", { foo: "bar" });
 
       expect(actual).toEqual(expectedResult);
     });

@@ -1,5 +1,7 @@
 import axios, { AxiosResponse } from "axios";
 
+export const DEVICE_TYPE = "hue-build-status";
+
 interface UsernameRequestType {
   deviceType: string;
 }
@@ -27,11 +29,7 @@ export class HueClient {
     return data;
   }
 
-  private async makeAuthenticatedRequest<T = never, R = never>(
-    method: HttpMethod,
-    path: string,
-    body?: T
-  ) {
+  public async getUsername() {
     if (!this.username) {
       const [
         {
@@ -41,20 +39,32 @@ export class HueClient {
         "POST",
         "",
         {
-          deviceType: "hue-build-status"
+          deviceType: DEVICE_TYPE
         }
       );
 
       this.username = username;
     }
+    return this.username;
+  }
+
+  private async makeAuthenticatedRequest<T = never, R = never>(
+    method: HttpMethod,
+    path: string,
+    body?: T
+  ) {
     return await this.makeRequest<T, R>(
       method,
-      `/${this.username}${path}`,
+      `/${await this.getUsername()}${path}`,
       body
     );
   }
 
-  async get(path: string) {
-    return await this.makeAuthenticatedRequest("GET", path);
+  async get<R>(path: string) {
+    return await this.makeAuthenticatedRequest<R>("GET", path);
+  }
+
+  async post<T, R>(path: string, data: T) {
+    return await this.makeAuthenticatedRequest<T, R>("POST", path, data);
   }
 }

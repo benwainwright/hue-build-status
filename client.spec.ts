@@ -17,7 +17,7 @@ describe("the hue client", () => {
 
       const bridge = nock("http://123.123.123.123");
 
-      bridge.post("/api", `{"deviceType":"${DEVICE_TYPE}"}`).reply(200, [
+      bridge.post("/api", `{"devicetype":"${DEVICE_TYPE}"}`).reply(200, [
         {
           success: {
             username: testUsername

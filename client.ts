@@ -3,8 +3,14 @@ import axios, { AxiosResponse } from "axios";
 export const DEVICE_TYPE = "hue-build-status";
 
 interface UsernameRequestType {
-  deviceType: string;
+  devicetype: string;
 }
+
+type HueErrorType = [
+  {
+    error: { type: number; address: string; description: string };
+  }
+];
 
 type UsernameResponseType = [
   {
@@ -13,6 +19,9 @@ type UsernameResponseType = [
     };
   }
 ];
+
+const isError = (response: unknown[]): response is HueErrorType =>
+  Array.isArray(response) && Object.hasOwnProperty.call(response[0], "error");
 
 type HttpMethod = "GET" | "POST";
 
@@ -26,22 +35,37 @@ export class HueClient {
       data: body
     });
 
+    console.log(data);
+
     return data;
   }
 
   public async getUsername() {
     if (!this.username) {
+      const response = await this.makeRequest<
+        UsernameRequestType,
+        UsernameResponseType | HueErrorType
+      >("POST", "", {
+        devicetype: DEVICE_TYPE
+      });
+
+      if (isError(response)) {
+        const [
+          {
+            error: { type, address, description }
+          }
+        ] = response;
+
+        const addressString = address ? `:${address}` : ``;
+
+        throw new Error(`Error[${type}${addressString}]: ${description}`);
+      }
+
       const [
         {
           success: { username }
         }
-      ] = await this.makeRequest<UsernameRequestType, UsernameResponseType>(
-        "POST",
-        "",
-        {
-          deviceType: DEVICE_TYPE
-        }
-      );
+      ] = response;
 
       this.username = username;
     }
